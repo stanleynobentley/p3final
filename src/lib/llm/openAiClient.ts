@@ -1,3 +1,4 @@
+import 'server-only'
 import { getOpenAiConfig } from '@/lib/llm/openAiConfig'
 
 type ChatMessage = {
