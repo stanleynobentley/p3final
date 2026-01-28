@@ -20,6 +20,7 @@ export type Item = {
   title: string
   date: string
   summary: string
+  imageUrl?: string
   fetchedAt: string
 }
 

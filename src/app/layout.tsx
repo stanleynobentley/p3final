@@ -7,8 +7,8 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Personal Article Aggregator",
-  description: "Aggregated articles from selected sources",
+  title: "P3everything",
+  description: "Agregace článků z Prahy 3",
 };
 
 export default function RootLayout({

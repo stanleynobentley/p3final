@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Item, SyncResult } from '@/lib/types'
 
-const DAYS_OPTIONS = [1, 3, 7, 30, 90] as const
+const DAYS_OPTIONS = [1, 7, 14] as const
 const LIST_PAGE_BATCH = 15
 
 type LoadState = {
@@ -46,11 +46,6 @@ const withinDays = (dateIso: string, days: number) => {
   return !Number.isNaN(parsed) && parsed >= threshold
 }
 
-const matchesQuery = (item: Item, query: string) => {
-  const haystack = `${item.title} ${item.summary}`.toLowerCase()
-  return haystack.includes(query.toLowerCase())
-}
-
 const uniqueSources = (items: Item[]) =>
   items.reduce<{ id: string; name: string }[]>((acc, item) => {
     const exists = acc.some((source) => source.id === item.sourceId)
@@ -84,7 +79,6 @@ const mergeSyncResults = (current: SyncResult, incoming: SyncResult): SyncResult
 export const ItemsView = () => {
   const [state, setState] = useState<LoadState>(initialState)
   const [daysFilter, setDaysFilter] = useState<number>(1)
-  const [query, setQuery] = useState('')
   const [sourceFilter, setSourceFilter] = useState('all')
   const [pageOffset, setPageOffset] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -131,9 +125,8 @@ export const ItemsView = () => {
   const filteredItems = useMemo(() => {
     const byDays = items.filter((item) => withinDays(item.date, daysFilter))
     const bySource = sourceFilter === 'all' ? byDays : byDays.filter((item) => item.sourceId === sourceFilter)
-    const byQuery = query ? bySource.filter((item) => matchesQuery(item, query)) : bySource
-    return [...byQuery].sort((a, b) => b.date.localeCompare(a.date))
-  }, [items, daysFilter, sourceFilter, query])
+    return [...bySource].sort((a, b) => b.date.localeCompare(a.date))
+  }, [items, daysFilter, sourceFilter])
 
   useEffect(() => {
     load(false)
@@ -142,9 +135,9 @@ export const ItemsView = () => {
   return (
     <main>
       <header>
-        <h1>Praha 3: agregace clanku</h1>
+        <h1>P3everything</h1>
         <p className="status">
-          {state.data?.lastSync ? `Last sync: ${new Date(state.data.lastSync).toLocaleString()}` : 'Last sync: -'}
+          {state.data?.lastSync ? `Poslední synchronizace: ${new Date(state.data.lastSync).toLocaleString('cs-CZ')}` : 'Poslední synchronizace: -'}
         </p>
         {state.error ? <p className="status">Chyba nacitani: {state.error}</p> : null}
       </header>
@@ -152,27 +145,16 @@ export const ItemsView = () => {
       <section className="panel controls">
         <label>
           Počet dní:
-          <select value={String(daysFilter)} onChange={(event) => setDaysFilter(Number(event.target.value))}>
-            {DAYS_OPTIONS.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
+          <select value={daysFilter} onChange={(e) => setDaysFilter(Number(e.target.value))}>
+            <option value={1}>1 den</option>
+            <option value={7}>7 dní</option>
+            <option value={14}>14 dní</option>
           </select>
         </label>
         <label>
-          Search
-          <input
-            type="search"
-            placeholder="Hledej v title a summary"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-        <label>
-          Zdroj
-          <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-            <option value="all">Vsechny</option>
+          Zdroj:
+          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
+            <option value="all">Všechny</option>
             {sources.map((source) => (
               <option key={source.id} value={source.id}>
                 {source.name}
@@ -199,15 +181,29 @@ export const ItemsView = () => {
         {state.loading && !state.data ? <p>Loading...</p> : null}
         {filteredItems.map((item) => (
           <article className="article-card" key={item.id}>
-            <a href={item.url} target="_blank" rel="noreferrer">
-              <h2 className="article-title">{item.title}</h2>
-            </a>
-            <div className="article-meta">
-              <span>{item.sourceName}</span>
-              <span>·</span>
-              <span>{new Date(item.date).toLocaleDateString('cs-CZ')}</span>
+            <div className="article-image">
+              <img
+                src={item.imageUrl ?? '/placeholder.svg'}
+                alt={item.title}
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg'
+                }}
+              />
             </div>
-            <pre className="article-summary">{item.summary}</pre>
+            <div className="article-content">
+              <a href={item.url} target="_blank" rel="noreferrer">
+                <h2 className="article-title">{item.title}</h2>
+              </a>
+              <ul className="article-summary">
+                {item.summary
+                  .split('\n')
+                  .map((line) => line.replace(/^\d+\)\s*/, ''))
+                  .filter((point) => point.trim())
+                  .map((point, i) => (
+                    <li key={i}>{point}</li>
+                  ))}
+              </ul>
+            </div>
           </article>
         ))}
       </section>

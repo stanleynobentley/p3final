@@ -18,7 +18,15 @@ const toNonNegativeInt = (value: number) => (Number.isFinite(value) ? Math.max(0
 
 const toItemId = (sourceId: string, url: string) => `${sourceId}:${encodeURIComponent(url)}`
 
-const buildItem = (source: Source, url: string, title: string, date: string, summary: string, fetchedAtIso: string): Item => ({
+const buildItem = (
+  source: Source,
+  url: string,
+  title: string,
+  date: string,
+  summary: string,
+  imageUrl: string | undefined,
+  fetchedAtIso: string
+): Item => ({
   id: toItemId(source.id, url),
   sourceId: source.id,
   sourceName: source.name,
@@ -26,6 +34,7 @@ const buildItem = (source: Source, url: string, title: string, date: string, sum
   title,
   date,
   summary,
+  imageUrl,
   fetchedAt: fetchedAtIso
 })
 
@@ -68,9 +77,9 @@ export const scrapeSourceItems = async (
 
   const tasks = limitedLinks.map((url) => async () => {
     const html = await fetchHtml(url, ARTICLE_TIMEOUT_MS, forceRefresh, source.allowInsecureTls)
-    const { title, date, contentText } = extractTitleDateContent(html, url, fetchedAtIso)
+    const { title, date, contentText, imageUrl } = extractTitleDateContent(html, url, fetchedAtIso)
     const summary = await summarize(contentText)
-    return buildItem(source, url, title, date, summary, fetchedAtIso)
+    return buildItem(source, url, title, date, summary, imageUrl, fetchedAtIso)
   })
 
   const { results, errors } = await mapWithConcurrency(tasks, ARTICLE_CONCURRENCY)

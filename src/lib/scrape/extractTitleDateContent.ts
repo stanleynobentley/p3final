@@ -23,5 +23,20 @@ export const extractTitleDateContent = (html: string, url: string, fetchedAtIso:
   const article = reader.parse()
   const contentText = article?.textContent?.trim() || extractMainText(doc)
 
-  return { title, date, contentText }
+  // Extract image URL
+  const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content')
+  const articleImg = doc.querySelector('article img')?.getAttribute('src')
+  const firstImg = doc.querySelector('img[src*="jpg"], img[src*="jpeg"], img[src*="png"], img[src*="webp"]')?.getAttribute('src')
+
+  let imageUrl: string | undefined
+  const rawImageUrl = ogImage || articleImg || firstImg
+  if (rawImageUrl) {
+    try {
+      imageUrl = new URL(rawImageUrl, url).href
+    } catch {
+      imageUrl = undefined
+    }
+  }
+
+  return { title, date, contentText, imageUrl }
 }
